@@ -13,8 +13,18 @@ const firebaseConfig = {
 };
 
 // Avoid re-initializing on hot reloads
-export const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
+const app = !getApps().length ? initializeApp(firebaseConfig) : getApp();
 
 // Firebase services
-export const auth = getAuth(app);
-export const db = getFirestore(app);
+const auth = getAuth(app);
+const currentUser=auth.currentUser;
+const currentUserUID=currentUser?.uid;
+const db = getFirestore(app);
+
+export {
+  app,
+  auth,
+  currentUser,
+  currentUserUID,
+  db,
+}

@@ -34,6 +34,7 @@ import {
 import { useState } from "react";
 
 export default function Navbar() {
+  
   const pathname = usePathname();
   const { user, loading } = useCurrentUser();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

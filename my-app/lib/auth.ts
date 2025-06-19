@@ -64,14 +64,7 @@ export const loginWithGoogle = async () => {
     const provider = new GoogleAuthProvider();
     const result = await signInWithPopup(auth, provider);
     const user = result.user;
-
-    // Optionally: Get ID token if needed
-    const token = await user.getIdToken();
-
-    // You can store the token in a cookie or state
-    document.cookie = `firebase_token=${token}; path=/;`;
-
-    return { user }; // ✅ Return the user object for further use
+    return { user }; 
   } catch (error) {
     throw new Error(error.message || "Google login failed");
   }
@@ -79,20 +72,35 @@ export const loginWithGoogle = async () => {
 
 
 // ✅ Signup Function
+// Extracts a display name from email (e.g., "ritesh.saini" => "Ritesh Saini")
+const getNameFromEmail = (email: string): string => {
+  const username = email.split("@")[0];
+  const parts = username.split(/[._]/);
+  return parts.map(p => p.charAt(0).toUpperCase() + p.slice(1)).join(" ");
+};
+
+// Generates a gravatar image URL based on email
+const gravatarURL = (email: string): string => {
+  const hash = md5(email.trim().toLowerCase());
+  return `https://www.gravatar.com/avatar/${hash}?d=identicon`;
+};
 export const signup = async (email: string, password: string, userType: "merchant" | "consumer") => {
   try {
-    // Validations...
     const userCredential = await createUserWithEmailAndPassword(auth, email, password);
 
     // Send verification
     await sendEmailVerification(userCredential.user);
-
+    const name = getNameFromEmail(email);
+    const photo = gravatarURL(email);
     // Save userType in Realtime Database
     const db = getDatabase(app);
-    console.log(`UID : ${userCredential.user.uid}`);
     await set(ref(db, `users/${userCredential.user.uid}`), {
       email: userCredential.user.email,
       userType: userType,
+      name:name,
+      phoneNumber:"",
+      PhotoUrl:photo,
+      uid:userCredential.user.uid,
       createdAt: new Date().toISOString(),
     });
 
