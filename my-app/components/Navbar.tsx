@@ -4,18 +4,37 @@ import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LogOut, Menu, X } from 'lucide-react';
-import { auth } from '@/lib/firebase';
+import { auth, db } from '@/lib/firebase';
 import type { User } from 'firebase/auth';
 import { signOut } from 'firebase/auth';
 import { toast } from 'react-hot-toast';
+import { get, ref } from 'firebase/database';
 
 const Navbar: React.FC = () => {
   const [user, setUser] = useState<User | null>(null);
+  const [userRole, setUserRole] = useState<string | null>(null);
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(setUser);
+    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
+      setUser(firebaseUser);
+      if (firebaseUser) {
+        try {
+          const snapshot = await get(ref(db, `/users/${firebaseUser.uid}`));
+          const data = snapshot.val();
+          if (data && data.role) {
+            setUserRole(data.role);
+          } else {
+            setUserRole(null);
+          }
+        } catch {
+          setUserRole(null);
+        }
+      } else {
+        setUserRole(null);
+      }
+    });
     return () => unsubscribe();
   }, []);
 
@@ -64,7 +83,7 @@ const Navbar: React.FC = () => {
             {user ? (
               <div className="flex items-center gap-4">
                 <Button asChild variant="outline">
-                  <Link href="/dashboard">Dashboard</Link>
+                  <Link href={userRole ? `/${userRole}/Dashboard` : "#"}>Dashboard</Link>
                 </Button>
                 <Button onClick={handleLogout} variant="outline" className="ml-2 flex items-center">
                   <LogOut className="w-4 h-4 mr-1" /> Logout
@@ -110,7 +129,7 @@ const Navbar: React.FC = () => {
               
               {user ? (
                 <>
-                  <Link href="/dashboard" className="text-blue-600" onClick={() => setIsMenuOpen(false)}>
+                  <Link href={userRole ? `/${userRole}/Dashboard` : "#"} className="text-blue-600">
                     Dashboard
                   </Link>
                   <button onClick={handleLogout} className="text-left text-gray-700">
