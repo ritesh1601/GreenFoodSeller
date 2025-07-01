@@ -58,7 +58,7 @@ const LoginForm = () => {
       if(!user){
         console.log(`User not found`);
       }    
-      toast.success('Google Sign-In successful! Welcome back!');
+      toast.success(`Welcome back ${user.displayName}`);
       if (role) {
         router.push(`/`);
       } else {

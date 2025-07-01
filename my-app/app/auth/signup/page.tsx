@@ -10,6 +10,8 @@ import { useRouter } from 'next/navigation';
 import { googleLogin, SetRole } from '@/lib/googleLogin';
 import { toast } from 'react-hot-toast';
 import type { User as FirebaseUser } from 'firebase/auth';
+import { get, ref } from 'firebase/database';
+import { db } from '@/lib/firebase';
 
 const SignupForm = () => {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Verification, 3: Complete
@@ -43,6 +45,13 @@ const SignupForm = () => {
       const result = await googleLogin();
       if (!result.user.email) {
         toast.error('Google account does not have an email address associated. Please use a different account.');
+        return;
+      }
+      // Check if user with this email already exists in the database
+      const snapshot = await get(ref(db, `users/${result.user.uid}`));
+      if (snapshot.exists()) {
+        toast.success(`Welcome back! You are already a registered ${snapshot.val().role}`);
+        router.push('/');
         return;
       }
       setGoogleUser(result.user);
