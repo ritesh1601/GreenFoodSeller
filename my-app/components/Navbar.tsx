@@ -1,18 +1,33 @@
 "use client"
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { useRouter } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { LogOut, Menu, X } from 'lucide-react';
+import { auth } from '@/lib/firebase';
+import type { User } from 'firebase/auth';
+import { signOut } from 'firebase/auth';
+import { toast } from 'react-hot-toast';
 
 const Navbar: React.FC = () => {
+  const [user, setUser] = useState<User | null>(null);
   const router = useRouter();
   const [isMenuOpen, setIsMenuOpen] = useState(false);
 
-  // Placeholder for logout logic
-  const handleLogout = () => {
-    // Add your logout logic here
-    router.push('/');
+  useEffect(() => {
+    const unsubscribe = auth.onAuthStateChanged(setUser);
+    return () => unsubscribe();
+  }, []);
+
+  const handleLogout = async () => {
+    try {
+      await signOut(auth);
+      toast.success('Logged out successfully!');
+      router.push('/');
+    } catch (error) {
+      console.log(error);
+      toast.error('Failed to log out.');
+    }
   };
 
   const scrollToSection = (sectionId: string) => {
@@ -22,9 +37,6 @@ const Navbar: React.FC = () => {
     }
     setIsMenuOpen(false);
   };
-
-  // Placeholder for user authentication state
-  const user = false; // Set to true to simulate logged-in state
 
   return (
     <nav className="bg-white shadow-lg sticky top-0 z-50">
@@ -54,9 +66,8 @@ const Navbar: React.FC = () => {
                 <Button asChild variant="outline">
                   <Link href="/dashboard">Dashboard</Link>
                 </Button>
-                <Button onClick={handleLogout} variant="ghost" size="sm">
-                  <LogOut className="h-4 w-4 mr-2" />
-                  Logout
+                <Button onClick={handleLogout} variant="outline" className="ml-2 flex items-center">
+                  <LogOut className="w-4 h-4 mr-1" /> Logout
                 </Button>
               </div>
             ) : (
