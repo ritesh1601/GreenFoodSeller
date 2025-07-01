@@ -7,7 +7,9 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckCircle, User, Store, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import { signupWithFirebase } from '@/lib/signupWithFirebase';
 import { useRouter } from 'next/navigation';
-import { googleLogin } from '@/lib/googleLogin';
+import { googleLogin, SetRole } from '@/lib/googleLogin';
+import { toast } from 'react-hot-toast';
+import type { User as FirebaseUser } from 'firebase/auth';
 
 const SignupForm = () => {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Verification, 3: Complete
@@ -29,6 +31,7 @@ const SignupForm = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
   const router = useRouter();
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -37,27 +40,48 @@ const SignupForm = () => {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      await googleLogin();
-      setStep(3); // Go to user type selection for Google signup
+      const result = await googleLogin();
+      if (!result.user.email) {
+        toast.error('Google account does not have an email address associated. Please use a different account.');
+        return;
+      }
+      setGoogleUser(result.user);
+      setStep(3);
     } catch (error) {
-      alert('Google signup failed. Please try again.');
+      toast.error(error instanceof Error ? error.message : 'Google signup failed. Please try again.');
       console.log(error);
     } finally {
       setGoogleLoading(false);
     }
   };
 
+  const handleGoogleRoleSet = async () => {
+    if (!googleUser || !userType) {
+      toast.error('Please select an account type.');
+      return;
+    }
+    setLoading(true);
+    try {
+      await SetRole({ user: googleUser, role: userType });
+      setStep(4);
+    } catch (error) {
+      toast.error(error instanceof Error ? error.message : 'Failed to set role.');
+    } finally {
+      setLoading(false);
+    }
+  };
+
   const handleBasicInfoSubmit = async () => {
     if (!formData.fullName || !formData.email || !formData.phone || !formData.password) {
-      alert('Please fill in all fields');
+      toast.error('Please fill in all fields');
       return;
     }
     if (formData.password !== formData.confirmPassword) {
-      alert('Passwords do not match');
+      toast.error('Passwords do not match');
       return;
     }
     if (formData.password.length < 8) {
-      alert('Password must be at least 8 characters long');
+      toast.error('Password must be at least 8 characters long');
       return;
     }
 
@@ -67,7 +91,7 @@ const SignupForm = () => {
       // Simulate sending verification codes
       setStep(2);
     } catch (error) {
-      alert('Something went wrong. Please try again.');
+      toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
     }
@@ -77,9 +101,9 @@ const SignupForm = () => {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(`Verification code sent to ${formData.email}`);
+      toast.success(`Verification code sent to ${formData.email}`);
     } catch (error) {
-      alert('Failed to send email verification');
+      toast.error('Failed to send email verification');
     } finally {
       setLoading(false);
     }
@@ -89,9 +113,9 @@ const SignupForm = () => {
     setLoading(true);
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
-      alert(`Verification code sent to ${formData.phone}`);
+      toast.success(`Verification code sent to ${formData.phone}`);
     } catch (error) {
-      alert('Failed to send phone verification');
+      toast.error('Failed to send phone verification');
     } finally {
       setLoading(false);
     }
@@ -100,18 +124,18 @@ const SignupForm = () => {
   const verifyEmail = async () => {
     if (verification.emailCode === '123456') {
       setVerification(prev => ({ ...prev, emailVerified: true }));
-      alert('Email verified successfully!');
+      toast.success('Email verified successfully!');
     } else {
-      alert('Invalid verification code. Try: 123456');
+      toast.error('Invalid verification code. Try: 123456');
     }
   };
 
   const verifyPhone = async () => {
     if (verification.phoneCode === '654321') {
       setVerification(prev => ({ ...prev, phoneVerified: true }));
-      alert('Phone verified successfully!');
+      toast.success('Phone verified successfully!');
     } else {
-      alert('Invalid verification code. Try: 654321');
+      toast.error('Invalid verification code. Try: 654321');
     }
   };
 
@@ -119,13 +143,13 @@ const SignupForm = () => {
     if (verification.emailVerified && verification.phoneVerified) {
       setStep(3);
     } else {
-      alert('Please verify both email and phone number');
+      toast.error('Please verify both email and phone number');
     }
   };
 
   const handleSignupComplete = async () => {
     if (!userType) {
-      alert('Please select account type');
+      toast.error('Please select account type');
       return;
     }
   
@@ -142,9 +166,9 @@ const SignupForm = () => {
       setStep(4); // Go to success screen
     } catch (error: unknown) {
       if (error instanceof Error) {
-        alert(error.message || 'Signup failed. Please try again.');
+        toast.error(error.message || 'Signup failed. Please try again.');
       } else {
-        alert('Signup failed. Please try again.');
+        toast.error('Signup failed. Please try again.');
       }
     } finally {
       setLoading(false);
@@ -457,7 +481,7 @@ const SignupForm = () => {
       </div>
 
       <Button
-        onClick={handleSignupComplete}
+        onClick={googleUser ? handleGoogleRoleSet : handleSignupComplete}
         className="w-full h-11 bg-blue-600 hover:bg-blue-700 transition-colors"
         disabled={!userType || loading}
       >
