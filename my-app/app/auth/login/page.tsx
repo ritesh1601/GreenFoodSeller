@@ -7,6 +7,10 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { googleLogin } from '@/lib/googleLogin';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
+import { signInWithEmailAndPassword } from 'firebase/auth';
+import { auth, db } from '@/lib/firebase';
+import { ref, get } from 'firebase/database';
+import { toast } from 'react-hot-toast';
 
 const LoginForm = () => {
   const [email, setEmail] = useState('');
@@ -14,22 +18,32 @@ const LoginForm = () => {
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
   const router = useRouter();
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
-    
+
     try {
-      // Simulate login process
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      
-      if (email === 'merchant@example.com' || email === 'consumer@example.com') {
-        alert('Login successful! Welcome back!');
-        // In real app: navigate('/dashboard');
-      } else {
-        alert('Login failed. Try: merchant@example.com / password');
+      const userCredential = await signInWithEmailAndPassword(auth, email, password);
+      const snapshot = await get(ref(db, `users/${userCredential.user.uid}`));
+      let role = null;
+      if (snapshot.exists()) {
+        const userData = snapshot.val();
+        role = userData.role || null;
       }
-    } catch {
-      alert('Something went wrong. Please try again.');
+
+      if (role) {
+        toast.success('Login successful!');
+        router.push(`/`);
+      } else {
+        toast.error('No role found for this user.');
+      }
+    } catch (error: unknown) {
+      if (error instanceof Error) {
+        toast.error(error.message || 'Login failed. Please try again.');
+      } else {
+        toast.error('Login failed. Please try again.');
+      }
     } finally {
       setLoading(false);
     }
@@ -40,13 +54,19 @@ const LoginForm = () => {
     
     try {
       // Simulate Google OAuth flow
-      const { role } = await googleLogin();
-      router.push(role === 'merchant' ? '/merchant' : '/consumer');
-      
-      alert('Google Sign-In successful! Welcome back!');
-      // In real app: navigate('/dashboard');
+      const { user, role } = await googleLogin();  
+      if(!user){
+        console.log(`User not found`);
+      }    
+      toast.success('Google Sign-In successful! Welcome back!');
+      if (role) {
+        router.push(`/`);
+      } else {
+        // fallback or error
+        toast.error('No role found for this user.');
+      }
     } catch (error) {
-      alert('Google Sign-In failed. Please try again.');
+      toast.dismiss('Google Sign-In failed. Please try again.');
       console.log(error);
     } finally {
       setGoogleLoading(false);

@@ -12,11 +12,14 @@ export const googleLogin = async () => {
   if (!user.email) {
     throw new Error('Google account does not have an email address associated.');
   }
-  // const snapshot = await get(ref(db, `users/${user.uid}`));
-  // const userData = snapshot.val();
-  // if(userData.email!=user.email){
-  //   console.log(`userData email : ${userData.email} and user email : ${user.email}`);
-  // }
+
+  // Check if user exists in Realtime Database
+  const snapshot = await get(ref(db, `users/${user.uid}`));
+  if (snapshot.exists()) {
+    const role=snapshot.val().role||null;
+    return { user , role };
+
+  }
 
   return { user };
 };
