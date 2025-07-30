@@ -4,14 +4,12 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { googleLogin } from '@/lib/googleLogin';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
-import { signInWithEmailAndPassword } from 'firebase/auth';
-import { auth, db } from '@/lib/firebase';
-import { ref, get } from 'firebase/database';
+import { signInWithEmailAndPassword, signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
 import { toast } from 'react-hot-toast';
-
+import { User } from "@/app/constants";
 const LoginForm = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
@@ -24,19 +22,30 @@ const LoginForm = () => {
     setLoading(true);
 
     try {
-      const userCredential = await signInWithEmailAndPassword(auth, email, password);
-      const snapshot = await get(ref(db, `users/${userCredential.user.uid}`));
-      let role = null;
-      if (snapshot.exists()) {
-        const userData = snapshot.val();
-        role = userData.role || null;
+      const { user } = await signInWithEmailAndPassword(auth, email, password);
+      if (!user) {
+        toast.error('User not found.');
+        setLoading(false);
+        return;
       }
-
-      if (role) {
-        toast.success('Login successful!');
+      
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const responseData = await response.json();
+      
+      if (response.ok && responseData.success && responseData.user) {
+        const userData: User = responseData.user;
+        const role = userData.role || null;
+        toast.success(`Welcome back ${userData.fullName || 'User'}`);
         router.push(`/`);
+        console.log(`Role: ${role}`);
       } else {
-        toast.error('No role found for this user.');
+        toast.error(responseData.error || 'Login failed. Please try again.');
       }
     } catch (error: unknown) {
       if (error instanceof Error) {
@@ -51,23 +60,35 @@ const LoginForm = () => {
 
   const handleGoogleSignIn = async () => {
     setGoogleLoading(true);
-    
     try {
-      // Simulate Google OAuth flow
-      const { user, role } = await googleLogin();  
-      if(!user){
-        console.log(`User not found`);
-      }    
-      toast.success(`Welcome back ${user.displayName}`);
-      if (role) {
-        router.push(`/`);
-      } else {
-        // fallback or error
-        toast.error('No role found for this user.');
+      const result = await signInWithPopup( auth , googleProvider );
+      const user = result.user;
+      if (!user) {
+        toast.error('Google user not found.');
+        setGoogleLoading(false);
+        return;
       }
-    } catch (error) {
-      toast.dismiss('Google Sign-In failed. Please try again.');
-      console.log(error);
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const responseData = await response.json();
+      
+      if (response.ok && responseData.success && responseData.user) {
+        const userData: User = responseData.user;
+        const role = userData.role || null;
+        toast.success(`Welcome back ${userData.fullName || 'User'}`);
+        router.push(`/`);
+        console.log(`Role: ${role}`);
+      } else {
+        toast.error(responseData.error || 'Login failed. Please try again.');
+      }
+    } catch (err) {
+      toast.error('Google Sign-In failed. Please try again.');
+      console.log(err);
     } finally {
       setGoogleLoading(false);
     }

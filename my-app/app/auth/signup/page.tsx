@@ -7,11 +7,11 @@ import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/com
 import { CheckCircle, User, Store, Mail, Phone, Eye, EyeOff } from 'lucide-react';
 import { signupWithFirebase } from '@/lib/signupWithFirebase';
 import { useRouter } from 'next/navigation';
-import { googleLogin, SetRole } from '@/lib/googleLogin';
+
 import { toast } from 'react-hot-toast';
-import type { User as FirebaseUser } from 'firebase/auth';
-import { get, ref } from 'firebase/database';
-import { db } from '@/lib/firebase';
+import { signInWithPopup } from 'firebase/auth';
+import { auth, googleProvider } from '@/lib/firebase';
+import { User as AppUser} from '@/app/constants';
 
 const SignupForm = () => {
   const [step, setStep] = useState(1); // 1: Basic Info, 2: Verification, 3: Complete
@@ -33,7 +33,7 @@ const SignupForm = () => {
   const [googleLoading, setGoogleLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
-  const [googleUser, setGoogleUser] = useState<FirebaseUser | null>(null);
+  const [googleUser, setGoogleUser] = useState<AppUser | null>(null);
   const router = useRouter();
   const handleInputChange = (field: string, value: string) => {
     setFormData(prev => ({ ...prev, [field]: value }));
@@ -42,19 +42,40 @@ const SignupForm = () => {
   const handleGoogleSignup = async () => {
     setGoogleLoading(true);
     try {
-      const result = await googleLogin();
-      if (!result.user.email) {
+      const result = await signInWithPopup(auth, googleProvider);
+      const user = result.user;
+      if (!user.email) {
         toast.error('Google account does not have an email address associated. Please use a different account.');
         return;
       }
+      
       // Check if user with this email already exists in the database
-      const snapshot = await get(ref(db, `users/${result.user.uid}`));
-      if (snapshot.exists()) {
-        toast.success(`Welcome back! You are already a registered ${snapshot.val().role}`);
+      const emailCheckResponse = await fetch('/api/signup/checkEmail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: user.email }),
+      });
+      
+      const emailCheckData = await emailCheckResponse.json();
+      
+      if (emailCheckData.exists) {
+        toast.success(`Welcome back! You are already a registered ${emailCheckData.user.role}`);
         router.push('/');
         return;
       }
-      setGoogleUser(result.user);
+      
+      const response = await fetch('/api/login', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: user.uid }),
+      });
+      const responseData = await response.json();
+      const userData: AppUser = responseData.user;
+      setGoogleUser(userData);
       setStep(3);
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Google signup failed. Please try again.');
@@ -63,21 +84,46 @@ const SignupForm = () => {
       setGoogleLoading(false);
     }
   };
-
+  const handleSetRole = async ({ user }: { user: AppUser }) => {
+    if (!user || !userType) {
+      toast.error('Please select an account type.');
+      return;
+    }
+    
+    setLoading(true);
+    try {
+      const response = await fetch('/api/setRole', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ 
+          user: user,
+          role: userType as 'consumer' | 'merchant' 
+        }),
+      });
+      
+      const data = await response.json();
+      
+      if (data.success) {
+        toast.success(data.message);
+        setStep(4);
+      } else {
+        toast.error(data.error || 'Failed to set role.');
+      }
+    } catch {
+      toast.error('Failed to set role. Please try again.');
+    } finally {
+      setLoading(false);
+    }
+  };
   const handleGoogleRoleSet = async () => {
     if (!googleUser || !userType) {
       toast.error('Please select an account type.');
       return;
     }
-    setLoading(true);
-    try {
-      await SetRole({ user: googleUser, role: userType });
-      setStep(4);
-    } catch (error) {
-      toast.error(error instanceof Error ? error.message : 'Failed to set role.');
-    } finally {
-      setLoading(false);
-    }
+    
+    await handleSetRole({ user: googleUser });
   };
 
   const handleBasicInfoSubmit = async () => {
@@ -96,10 +142,27 @@ const SignupForm = () => {
 
     setLoading(true);
     try {
+      // Check if user with this email already exists
+      const emailCheckResponse = await fetch('/api/signup/checkEmail', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ email: formData.email }),
+      });
+      
+      const emailCheckData = await emailCheckResponse.json();
+      
+      if (emailCheckData.exists) {
+        toast.error('An account with this email already exists. Please use a different email or sign in.');
+        setLoading(false);
+        return;
+      }
+
       await new Promise(resolve => setTimeout(resolve, 1000));
       // Simulate sending verification codes
       setStep(2);
-    } catch (error) {
+    } catch {
       toast.error('Something went wrong. Please try again.');
     } finally {
       setLoading(false);
@@ -111,7 +174,7 @@ const SignupForm = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success(`Verification code sent to ${formData.email}`);
-    } catch (error) {
+    } catch {
       toast.error('Failed to send email verification');
     } finally {
       setLoading(false);
@@ -123,7 +186,7 @@ const SignupForm = () => {
     try {
       await new Promise(resolve => setTimeout(resolve, 1000));
       toast.success(`Verification code sent to ${formData.phone}`);
-    } catch (error) {
+    } catch {
       toast.error('Failed to send phone verification');
     } finally {
       setLoading(false);
@@ -332,7 +395,7 @@ const SignupForm = () => {
       <div className="text-center mb-6">
         <h3 className="text-lg font-semibold text-gray-900 mb-2">Verify Your Information</h3>
         <p className="text-sm text-gray-600">
-          We've sent verification codes to your email and phone number
+          We&apos;ve sent verification codes to your email and phone number
         </p>
       </div>
 
