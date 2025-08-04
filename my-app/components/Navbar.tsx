@@ -1,156 +1,184 @@
-"use client"
-import React, { useState, useEffect } from 'react';
-import Link from 'next/link';
-import { useRouter } from 'next/navigation';
-import { Button } from '@/components/ui/button';
-import { LogOut, Menu, X } from 'lucide-react';
-import { auth, db } from '@/lib/firebase';
-import type { User } from 'firebase/auth';
-import { signOut } from 'firebase/auth';
-import { toast } from 'react-hot-toast';
-import { get, ref } from 'firebase/database';
+'use client';
 
-const Navbar: React.FC = () => {
-  const [user, setUser] = useState<User | null>(null);
-  const [userRole, setUserRole] = useState<string | null>(null);
-  const router = useRouter();
+import React, { useState, useEffect } from 'react';
+import MenuIcon from './ui/MenuIcon';
+import XIcon from './ui/XIcon';
+import LogoutIcon from './ui/LogoutIcon';
+import { useRouter } from 'next/navigation';
+import {User as UserData}  from "@/app/constants"
+import Logo from "@/components/Logo";
+const pulseSlow = `
+  @keyframes pulse-slow {
+    0%, 100% {
+      transform: scale(1);
+    }
+    50% {
+      transform: scale(1.1);
+    }
+  }
+`;
+
+const Navbar = () => {
+  const [user, setUser] = useState<UserData | null>(null);
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const router = useRouter();
 
   useEffect(() => {
-    const unsubscribe = auth.onAuthStateChanged(async (firebaseUser) => {
-      setUser(firebaseUser);
-      if (firebaseUser) {
-        try {
-          const snapshot = await get(ref(db, `/users/${firebaseUser.uid}`));
-          const data = snapshot.val();
-          if (data && data.role) {
-            setUserRole(data.role);
-          } else {
-            setUserRole(null);
-          }
-        } catch {
-          setUserRole(null);
+    const fetchUser = async () => {
+      try {
+        const res = await fetch('/api/GetUser');
+        const data = await res.json();
+        if (data.success) {
+          setUser(data.user);
         }
-      } else {
-        setUserRole(null);
+      } catch (err) {
+        console.error('Failed to fetch user:', err);
       }
-    });
-    return () => unsubscribe();
+    };
+    fetchUser();
   }, []);
 
   const handleLogout = async () => {
     try {
-      await signOut(auth);
-      toast.success('Logged out successfully!');
-      router.push('/');
+      const res = await fetch('/api/logout', { method: 'POST' });
+      if (res.ok) {
+        setUser(null);
+        setIsMenuOpen(false);
+        router.push('/');
+        router.refresh();
+      } else {
+        console.error('Logout failed:', await res.json());
+      }
     } catch (error) {
-      console.log(error);
-      toast.error('Failed to log out.');
+      console.error('Error during logout:', error);
     }
   };
 
-  const scrollToSection = (sectionId: string) => {
-    const element = document.getElementById(sectionId);
-    if (element) {
-      element.scrollIntoView({ behavior: 'smooth' });
-    }
-    setIsMenuOpen(false);
-  };
+  const navItems = [
+    { name: 'Home', href: '/' },
+    { name: 'About', href: '/About' },
+    { name: 'Contacts', href: '/Contact' },
+  ];
 
   return (
-    <nav className="bg-white shadow-lg sticky top-0 z-50">
-      <div className="container mx-auto px-4">
-        <div className="flex justify-between items-center h-16">
-          <Link href="/" className="text-2xl font-bold text-blue-600">
-            MerchantPortal
-          </Link>
+      <>
+        <style>{pulseSlow}</style>
+        <nav className="bg-gradient-to-r from-green-50 to-green-100 shadow-lg sticky top-0 z-50 rounded-b-xl">
+          <div className="container mx-auto px-4">
+            <div className="flex justify-between items-center h-20">
+              {/* Logo */}
+              <Logo/>
 
-          {/* Desktop Navigation */}
-          <div className="hidden md:flex items-center space-x-8">
-            <button 
-              onClick={() => scrollToSection('about')}
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              About
-            </button>
-            <button 
-              onClick={() => scrollToSection('contact')}
-              className="text-gray-700 hover:text-blue-600 transition-colors"
-            >
-              Contact
-            </button>
-            
-            {user ? (
-              <div className="flex items-center gap-4">
-                <Button asChild variant="outline">
-                  <Link href={userRole ? `/${userRole}/Dashboard` : "#"}>Dashboard</Link>
-                </Button>
-                <Button onClick={handleLogout} variant="outline" className="ml-2 flex items-center">
-                  <LogOut className="w-4 h-4 mr-1" /> Logout
-                </Button>
+              {/* Desktop Nav */}
+              <div className="hidden md:flex items-center space-x-8">
+                {navItems.map((item) => (
+                    <a
+                        key={item.name}
+                        href={item.href}
+                        className="relative text-gray-700 font-medium text-lg hover:text-green-600 transition-colors duration-300 transform hover:scale-110"
+                    >
+                      {item.name}
+                    </a>
+                ))}
+
+                {user ? (
+                    <div className="flex items-center gap-4 ml-8">
+                      <a href={`/${user.role || 'user'}/Dashboard`}>
+                        <button className="bg-green-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                          Dashboard
+                        </button>
+                      </a>
+                      <button
+                          onClick={handleLogout}
+                          className="flex items-center bg-transparent text-green-600 font-semibold py-2 px-4 rounded-full border border-green-600 hover:bg-green-600 hover:text-white transition-all duration-300 transform hover:-translate-y-1 hover:scale-105"
+                      >
+                        <LogoutIcon /> Logout
+                      </button>
+                    </div>
+                ) : (
+                    <div className="flex items-center gap-4 ml-8">
+                      <a href="/auth/login">
+                        <button className="bg-transparent text-green-600 font-semibold py-2 px-4 rounded-full border border-green-600 hover:bg-green-600 hover:text-white transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                          Login
+                        </button>
+                      </a>
+                      <a href="/auth/signup">
+                        <button className="bg-green-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                          Get Started ♻️
+                        </button>
+                      </a>
+                    </div>
+                )}
               </div>
-            ) : (
-              <div className="flex items-center gap-4">
-                <Button asChild variant="ghost">
-                  <Link href="/auth/login">Login</Link>
-                </Button>
-                <Button asChild>
-                  <Link href="/auth/signup">Get Started</Link>
-                </Button>
-              </div>
-            )}
+
+              {/* Mobile Menu Toggle */}
+              <button
+                  className="md:hidden p-2 rounded-full hover:bg-gray-200 transition-colors duration-300"
+                  onClick={() => setIsMenuOpen(!isMenuOpen)}
+              >
+                {isMenuOpen ? <XIcon /> : <MenuIcon />}
+              </button>
+            </div>
           </div>
 
-          {/* Mobile menu button */}
-          <button
-            className="md:hidden"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
+          {/* Mobile Nav */}
+          <div
+              className={`md:hidden overflow-hidden transition-all duration-300 ease-in-out ${
+                  isMenuOpen ? 'max-h-96 opacity-100 py-4' : 'max-h-0 opacity-0'
+              }`}
           >
-            {isMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-          </button>
-        </div>
+            <div className="flex flex-col space-y-4 px-4 border-t border-gray-200 pt-4">
+              {navItems.map((item) => (
+                  <a
+                      key={item.name}
+                      href={item.href}
+                      onClick={() => setIsMenuOpen(false)}
+                      className="text-left text-gray-700 hover:text-green-600 font-medium transition-colors duration-300"
+                  >
+                    {item.name}
+                  </a>
+              ))}
 
-        {/* Mobile Navigation */}
-        {isMenuOpen && (
-          <div className="md:hidden py-4 border-t">
-            <div className="flex flex-col space-y-4">
-              <button 
-                onClick={() => scrollToSection('about')}
-                className="text-left text-gray-700 hover:text-blue-600 transition-colors"
-              >
-                About
-              </button>
-              <button 
-                onClick={() => scrollToSection('contact')}
-                className="text-left text-gray-700 hover:text-blue-600 transition-colors"
-              >
-                Contact
-              </button>
-              
+              <div className="border-t border-gray-200 my-4"></div>
+
               {user ? (
-                <>
-                  <Link href={userRole ? `/${userRole}/Dashboard` : "#"} className="text-blue-600">
-                    Dashboard
-                  </Link>
-                  <button onClick={handleLogout} className="text-left text-gray-700">
-                    Logout
-                  </button>
-                </>
+                  <>
+                    <a
+                        href={`/${user.role || 'user'}/Dashboard`}
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-left font-medium text-green-600"
+                    >
+                      Dashboard
+                    </a>
+                    <button
+                        onClick={handleLogout}
+                        className="text-left font-medium text-gray-700 hover:text-red-500 transition-colors duration-300"
+                    >
+                      Logout
+                    </button>
+                  </>
               ) : (
-                <>
-                  <Link href="/auth/login" className="text-gray-700" onClick={() => setIsMenuOpen(false)}>
-                    Login
-                  </Link>
-                  <Link href="/auth/signup" className="text-blue-600" onClick={() => setIsMenuOpen(false)}>
-                    Get Started
-                  </Link>
-                </>
+                  <>
+                    <a
+                        href="/auth/login"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-left font-medium text-gray-700"
+                    >
+                      Login
+                    </a>
+                    <a
+                        href="/auth/signup"
+                        onClick={() => setIsMenuOpen(false)}
+                        className="text-left font-medium text-green-600"
+                    >
+                      Get Started
+                    </a>
+                  </>
               )}
             </div>
           </div>
-        )}
-      </div>
-    </nav>
+        </nav>
+      </>
   );
 };
 
