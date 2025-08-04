@@ -42,8 +42,8 @@ const LoginForm = () => {
         const userData: User = responseData.user;
         const role = userData.role || null;
         toast.success(`Welcome back ${userData.fullName || 'User'}`);
-        router.push(`/`);
-        console.log(`Role: ${role}`);
+        router.push(`/${role}`);
+        // console.log(`Role: ${role}`);
       } else {
         toast.error(responseData.error || 'Login failed. Please try again.');
       }
@@ -81,8 +81,8 @@ const LoginForm = () => {
         const userData: User = responseData.user;
         const role = userData.role || null;
         toast.success(`Welcome back ${userData.fullName || 'User'}`);
-        router.push(`/`);
-        console.log(`Role: ${role}`);
+        router.push(`/${role}`);
+        // console.log(`Role: ${role}`);
       } else {
         toast.error(responseData.error || 'Login failed. Please try again.');
       }
