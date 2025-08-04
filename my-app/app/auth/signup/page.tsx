@@ -14,7 +14,7 @@ import { signInWithPopup } from 'firebase/auth';
 
 const SignupForm = () => {
   const [step, setStep] = useState(1);
-
+  const [currentUser,setcurrentUser]=useState<AppUser|null>(null);
   const [userType, setUserType] = useState('');
   const [formData, setFormData] = useState({
     fullName: '',
@@ -84,7 +84,7 @@ const SignupForm = () => {
     }
     setLoading(true);
     try {
-      console.log(`user uid : ${googleUser.uid} and user role : ${userType}`);
+      // console.log(`user uid : ${googleUser.uid} and user role : ${userType}`);
       const response = await fetch('http://localhost:3000/api/signup/setRole', {
         method: 'POST',
         headers: {
@@ -127,14 +127,26 @@ const SignupForm = () => {
 
     setLoading(true);
     try {
-      // Simulate a backend call to check if the email exists
-      await new Promise(resolve => setTimeout(resolve, 500));
-      const emailExists = false; 
-      if (emailExists) {
+      const response=await fetch('http://localhost:3000/api/signup',{
+        method:'POST',
+        headers:{
+          'Content-Type':`application/json`,
+        },
+        body:JSON.stringify({
+          fullName:formData.fullName, 
+          email:formData.email,
+          phone:formData.phone, 
+          password:formData.password, 
+          role:"consumer",
+        }),
+      })
+      if (!response.ok) {
         toast.error('An account with this email already exists.');
         return;
       }
       toast.success('Basic information saved. Now, verify your account.');
+      const userData= await response.json();
+      setcurrentUser(userData);
       setStep(2);
     } catch (error) {
       toast.error('Something went wrong. Please try again.');
@@ -184,10 +196,20 @@ const SignupForm = () => {
     }
     setLoading(true);
     try {
-      // Simulate final signup API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-      toast.success('Account created successfully!');
-      setStep(4);
+      const response = await fetch('http://localhost:3000/api/signup/setRole', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ uid: currentUser.uid, role: userType }),
+      });
+      if(response.ok){
+        toast.success('Account created successfully!');
+        setStep(4);
+      }
+      else{
+        toast.error("Signup Failed");
+      }
     } catch (error) {
       toast.error(error instanceof Error ? error.message : 'Signup failed. Please try again.');
     } finally {
