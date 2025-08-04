@@ -8,10 +8,10 @@ const firebaseConfig = {
   authDomain: "greenfoodseller.firebaseapp.com",
   databaseURL: "https://greenfoodseller-default-rtdb.firebaseio.com",
   projectId: "greenfoodseller",
-  storageBucket: "greenfoodseller.appspot.com",
+  storageBucket: "greenfoodseller.firebasestorage.app",
   messagingSenderId: "371265581815",
-  appId: "1:371265581815:web:386f392b7e3fbf29c8d9f2",
-  measurementId: "G-YW2MBM66FS"
+  appId: "1:371265581815:web:3bd08fcad3a02124c8d9f2",
+  measurementId: "G-HLQ67WX6EW"
 };
 
 const app = initializeApp(firebaseConfig);
