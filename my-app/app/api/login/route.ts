@@ -5,7 +5,7 @@ import { User } from '@/app/constants';
 import jwt from 'jsonwebtoken';
 import { serialize } from 'cookie';
 
-const SECRET = process.env.JWT_SECRET!; // Define this in your .env
+const SECRET = process.env.JWT_SECRET!; 
 
 export async function POST(request: NextRequest) {
   try {
@@ -51,6 +51,7 @@ export async function POST(request: NextRequest) {
     response.headers.set('Set-Cookie', cookie);
     return response;
   } catch (err) {
+    console.log(err);
     return NextResponse.json({ error: 'Internal server error', success: false }, { status: 500 });
   }
 }
