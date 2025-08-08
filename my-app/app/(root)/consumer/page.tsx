@@ -1,6 +1,6 @@
 "use client"
 import React, { useState } from 'react';
-import {products} from "@/app/constants"
+import { products, ProductItem } from "@/app/constants"
 import ConsumerHeroSection from "@/components/ConsumerHeroSection"
 import SearchBar from "@/components/SearchBar"
 import CategoryNav from "@/components/CategoryNav";
@@ -9,7 +9,7 @@ import ProductGrid from "@/components/ProductGrid";
 const App = () => {
     const [searchTerm, setSearchTerm] = useState('');
     const [activeCategory, setActiveCategory] = useState('All');
-    const [cart, setCart] = useState([]);
+    const [cart, setCart] = useState<ProductItem[]>([]);
 
     // For a real app, you would fetch these from an API
     const categories = ['All', 'Fruits', 'Vegetables', 'Meat', 'Bakery', 'Dairy', 'Pantry'];
@@ -19,15 +19,15 @@ const App = () => {
     const filteredProducts = products.filter(product => {
         const matchesCategory = activeCategory === 'All' || product.category === activeCategory;
         const matchesSearch = product.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-            product.description.toLowerCase().includes(searchTerm.toLowerCase());
+            (product.description && product.description.toLowerCase().includes(searchTerm.toLowerCase()));
         return matchesCategory && matchesSearch;
     });
 
-    const handleAddToCart = (product) => {
+    const handleAddToCart = (product: ProductItem) => {
         setCart([...cart, product]);
     };
 
-    const handleToggleFavorite = (productId) => {
+    const handleToggleFavorite = (productId: number) => {
         console.log(`Toggled favorite for product ${productId}`);
     };
 

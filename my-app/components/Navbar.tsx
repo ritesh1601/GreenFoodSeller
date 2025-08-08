@@ -1,11 +1,10 @@
 'use client';
-
 import React, { useState, useEffect } from 'react';
 import MenuIcon from './ui/MenuIcon';
 import XIcon from './ui/XIcon';
 import LogoutIcon from './ui/LogoutIcon';
 import { useRouter } from 'next/navigation';
-import {User as UserData}  from "@/app/constants"
+import { User as UserData } from "@/app/constants"
 import Logo from "@/components/Logo";
 const pulseSlow = `
   @keyframes pulse-slow {
@@ -27,12 +26,18 @@ const Navbar = () => {
     const fetchUser = async () => {
       try {
         const res = await fetch('/api/GetUser');
+        if (!res.ok) {
+          throw new Error(`HTTP error! status: ${res.status}`);
+        }
         const data = await res.json();
-        if (data.success) {
+        if (data.success && data.user) {
           setUser(data.user);
+        } else {
+          console.warn('User data not available or invalid');
         }
       } catch (err) {
         console.error('Failed to fetch user:', err);
+        // Don't set user to null here, let it remain undefined for loading state
       }
     };
     fetchUser();
@@ -83,6 +88,14 @@ const Navbar = () => {
 
                 {user ? (
                     <div className="flex items-center gap-4 ml-8">
+                      {user.role==='consumer'?
+                      <>                        
+                        <a href={`/${user.role || 'user'}/`}>
+                          <button className="bg-green-500 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                            Order Now
+                        </button>
+                        </a>
+                      </>:<></>}
                       <a href={`/${user.role || 'user'}/Dashboard`}>
                         <button className="bg-green-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
                           Dashboard

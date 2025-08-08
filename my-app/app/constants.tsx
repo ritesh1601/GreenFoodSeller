@@ -1,5 +1,7 @@
+import { RotateCcw, User, ShoppingBag } from 'lucide-react'
+import {Shield, Zap, Users, Home, CreditCard, MessageSquare, Clock, FileText} from 'lucide-react';
 
-import { Shield, Zap, Users } from 'lucide-react';
+// Export the User type properly
 export interface User {
     uid: string;
     email: string;
@@ -8,7 +10,42 @@ export interface User {
     photoURL?: string | null;  
     phoneNumber?: string;  
     createdAt?: string; 
-  }
+}
+
+// Add proper type definitions for all exported data
+export interface SummaryCard {
+    icon: React.ComponentType<{ className?: string }>;
+    value: string;
+    label: string;
+    subtext: string;
+    availability?: string;
+}
+
+export interface OrderStat {
+    label: string;
+    value: string;
+    action: string;
+    rating?: string;
+}
+
+export interface NavItem {
+    icon: React.ComponentType<{ className?: string }>;
+    active: boolean;
+}
+
+export interface ProductItem {
+    id: number;
+    name: string;
+    price: number;
+    image: string;
+    description?: string;
+    rating?: number;
+    reviews?: number;
+    category?: string;
+    isFavorite?: boolean;
+    originalPrice?: number;
+    discount?: number;
+}
 
 // Account types and their properties for the signup form
 export const ACCOUNT_TYPES = [
@@ -135,3 +172,57 @@ export const products = [
         isFavorite: false
     }
 ];
+export const recommendedItems: ProductItem[] = [
+    { id: 1, name: 'Fresh Spinach', price: 4.99, image: '/images/spinach.jpg' },
+    { id: 2, name: 'Organic Lettuce', price: 3.49, image: '/images/lettuce.jpg' },
+    { id: 3, name: 'Baby Kale', price: 5.99, image: '/images/kale.jpg' },
+    { id: 4, name: 'Cucumber Pack', price: 2.89, image: '/images/cucumber.jpg' }
+]
+
+export const topSellers: ProductItem[] = [
+    { id: 5, name: 'Green Beans', price: 4.29, image: '/images/green-beans.jpg' },
+    { id: 6, name: 'Fresh Cabbage', price: 2.99, image: '/images/cabbage.jpg' },
+    { id: 7, name: 'Organic Broccoli', price: 3.79, image: '/images/broccoli.jpg' }
+]
+export const navItems: NavItem[] = [
+    { icon: Home, active: true },
+    { icon: CreditCard, active: false },
+    { icon: MessageSquare, active: false },
+    { icon: Clock, active: false },
+    { icon: FileText, active: false },
+    { icon: Shield, active: false }
+]
+
+export const summaryCards: SummaryCard[] = [
+    {
+        icon: ShoppingBag,
+        value: '$125.47',
+        label: 'total spent',
+        subtext: 'View insight data'
+    },
+    {
+        icon: RotateCcw,
+        value: '$89',
+        label: 'average order value',
+        subtext: 'Active order'
+    },
+    {
+        icon: ShoppingBag,
+        value: '18',
+        label: 'Merchants info',
+        subtext: 'Account'
+    },
+    {
+        icon: User,
+        value: 'Fresh Greens',
+        label: 'into',
+        subtext: '94% total',
+        availability: '24/7 availability'
+    }
+]
+
+export const orderStats: OrderStat[] = [
+    { label: 'Order history', value: '156', action: 'View insight' },
+    { label: 'Your wishlist', value: '28', action: '+ Add' },
+    { label: 'Merchant info', value: '12', rating: '4.8', action: 'Contact seller' }
+]
