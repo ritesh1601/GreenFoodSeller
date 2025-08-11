@@ -12,12 +12,7 @@ const DashboardHeader: React.FC<DashboardHeaderProps> = ({ isMenuOpen, setIsMenu
   return (
     <header className="bg-white shadow-sm border-b">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-        <div className="flex justify-between items-center h-16">
-          <div className="flex items-center space-x-3">
-            <LeafIcon className="w-8 h-8 text-green-600" />
-            <h1 className="text-xl font-bold text-gray-900">Merchant Dashboard</h1>
-          </div>
-          
+        <div className="flex justify-between items-center h-16">          
           {/* Mobile menu button */}
           <button
             onClick={() => setIsMenuOpen(!isMenuOpen)}
