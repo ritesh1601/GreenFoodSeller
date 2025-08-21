@@ -1,12 +1,16 @@
 import React from 'react'
 
-const LeafIcon = () => {
+interface LeafIconProps {
+  className?: string
+}
+
+const LeafIcon: React.FC<LeafIconProps> = ({ className = "h-8 w-8 text-green-600 animate-pulse-slow" }) => {
   return (
     <svg
       xmlns="http://www.w3.org/2000/svg"
       viewBox="0 0 24 24"
       fill="currentColor"
-      className="h-8 w-8 text-green-600 animate-pulse-slow"
+      className={className}
     >
       <path
         fillRule="evenodd"

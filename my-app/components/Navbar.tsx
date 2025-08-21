@@ -95,7 +95,13 @@ const Navbar = () => {
                             Order Now
                         </button>
                         </a>
-                      </>:<></>}
+                      </>:<>
+                      <a href={`/${user.role || 'user'}/`}>
+                          <button className="bg-green-500 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
+                            Partner
+                        </button>
+                        </a>
+                      </>}
                       <a href={`/${user.role || 'user'}/Dashboard`}>
                         <button className="bg-green-600 text-white font-semibold py-2 px-4 rounded-full shadow-md hover:bg-green-700 transition-all duration-300 transform hover:-translate-y-1 hover:scale-105">
                           Dashboard
